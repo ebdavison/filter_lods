@@ -96,6 +96,7 @@ This function takes a list of dictionaries and produces HTML FORM strings for us
 - fields = list of field names
 - data = list of dictionaries
 - types = dictionary of field types
+- exclude_fields = list of field names to exclude from the output
 
 ### output:
 
@@ -104,4 +105,13 @@ This function takes a list of dictionaries and produces HTML FORM strings for us
 ### Example:
 
 ```
+>>> from filters import *
+>>> lod = [ { "a": 1, "b": "abc", "c": "2020-01-01" }, { "a": 2, "b": "abc", "c": "2020-01-02" } ]
+>>> fields = [k for k in lod[0].keys()]
+>>> # this would be the result of request_dict = request.GET.dict()
+>>> request_dict = {'page': '1', 'a': '1', 'b': '_unselected_', 'c': '_unselected_'}
+>>> form_data = form_lod(request_dict, fields, lod, lod_types, [])
+>>> form_data
+[{'a': '<label for="id_a">a:</label><select class="form-control" name="a" id="id_a"><option value="_unselected_">--------</option><option value="1">1</option><option value="2">2</option></select>'}, {'b': '<label for="id_b">b:</label><select class="form-control" name="b" id="id_b"><option value="_unselected_ selected">--------</option><option value="abc">abc</option></select>'}]
+>>>
 ```
