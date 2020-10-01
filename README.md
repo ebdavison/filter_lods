@@ -42,6 +42,7 @@ dictionary:
 ### Example:
 
 ```
+>>> from filters import *
 >>> lod = [ { "a": 1, "b": "abc", "c": "2020-01-01" }, { "a": 2, "b": "abc", "c": "2020-01-02" } ]
 >>> fields = [k for k in lod[0].keys()]
 >>> lod_types = types_lod(fields, lod)
@@ -72,6 +73,17 @@ This function takes a list of dictionaries and filters out non-matching rows bas
 ### Example:
 
 ```
+>>> from filters import *
+>>> lod = [ { "a": 1, "b": "abc", "c": "2020-01-01" }, { "a": 2, "b": "abc", "c": "2020-01-02" } ]
+>>> fields = [k for k in lod[0].keys()]
+>>> # this would be the result of request_dict = request.GET.dict()
+>>> request_dict = {'page': '1', 'a': '1', 'b': '_unselected_', 'c': '_unselected_'}
+>>> filtered_lod = filter_lod(request_dict, fields, lod, lod_types)
+>>> lod
+[{'a': 1, 'b': 'abc', 'c': '2020-01-01'}, {'a': 2, 'b': 'abc', 'c': '2020-01-02'}]
+>>> filtered_lod
+[{'a': 1, 'b': 'abc', 'c': '2020-01-01'}]
+>>>
 ```
 
 ## form_lod()

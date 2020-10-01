@@ -114,19 +114,27 @@ def filter_lod(request_items, fields, data, types):
       - filtered list of dictionaries
     """
     filtered = data
-    ri = request_items.dict()
-    for key in ri.keys():
-        if "_unselected_" not in ri[key]:
+    request_items = request_items
+    for key in request_items.keys():
+        if "_unselected_" not in request_items[key]:
             if key in fields:
                 if types[key]["type"] == "string" and types[key]["len"] > 50:
                     filtered = [
                         d
                         for d in filtered
-                        if condition_contains(d, key, ri[key])
+                        if condition_contains(d, key, request_items[key])
+                    ]
+                elif types[key]["type"] == "int":
+                    filtered = [
+                        d
+                        for d in filtered
+                        if condition_equal(d, key, int(request_items[key]))
                     ]
                 else:
                     filtered = [
-                        d for d in filtered if condition_equal(d, key, ri[key])
+                        d
+                        for d in filtered
+                        if condition_equal(d, key, request_items[key])
                     ]
 
     return filtered
