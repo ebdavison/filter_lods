@@ -6,9 +6,14 @@ def condition_equal(dict, k, v):
     return dict[k] == v
 
 
+# return true/false if a value matches a dictionary[key] value
+def condition_bool_equal(dict, k, v):
+    return dict[k] == eval(v)
+
+
 # return true/false if a value is contained in a dictionary[key] value
 def condition_contains(dict, k, v):
-    return v in dict[k]
+    return v.lower() in dict[k].lower()
 
 
 # return true/false if a value is an integer
@@ -23,6 +28,9 @@ def check_int(s):
 
 # return true/false if a value is an date
 def check_date(s):
+    if isinstance(s, datetime.datetime):
+        return True
+    
     try:
         pendulum.parse(s)
         return True
@@ -33,6 +41,13 @@ def check_date(s):
     except:
         return False
 
+    
+def check_boolean(s):
+    if isinstance(s, bool):
+        return True
+    else:
+        return False
+    
 
 def types_lod(fields, data):
     """
@@ -84,6 +99,15 @@ def types_lod(fields, data):
             else False
         )
 
+        # check for boolean
+        ivalues = iter(key_values)
+        first_bool = check_boolean(next(ivalues))
+        same_bool = (
+            first_bool
+            if all((check_boolean(x) == first_bool) for x in ivalues)
+            else False
+        )
+
         item_dict = dict()
         if first_int and same_int:
             item_dict.setdefault("type", "int")
@@ -91,6 +115,10 @@ def types_lod(fields, data):
             field_types.setdefault(key, item_dict)
         elif first_date and same_date:
             item_dict.setdefault("type", "date")
+            item_dict.setdefault("len", 0)
+            field_types.setdefault(key, item_dict)
+        elif first_bool and same_bool:
+            item_dict.setdefault("type", "bool")
             item_dict.setdefault("len", 0)
             field_types.setdefault(key, item_dict)
         else:
@@ -118,17 +146,30 @@ def filter_lod(request_items, fields, data, types):
     for key in request_items.keys():
         if "_unselected_" not in request_items[key]:
             if key in fields:
-                if types[key]["type"] == "string" and types[key]["len"] > 50:
-                    filtered = [
-                        d
-                        for d in filtered
-                        if condition_contains(d, key, request_items[key])
-                    ]
+                if types[key]["type"] == "string" and types[key]["len"] > 35:
+                    if request_items[key][:1] == "!":
+                        request_value = request_items[key][1:]
+                        filtered = [
+                            d
+                            for d in filtered
+                            if not condition_contains(
+                                # d, key, request_items[key]
+                                d,
+                                key,
+                                request_value,
+                            )
+                        ]
                 elif types[key]["type"] == "int":
                     filtered = [
                         d
                         for d in filtered
                         if condition_equal(d, key, int(request_items[key]))
+                    ]
+                elif types[key]["type"] == "bool":
+                    filtered = [
+                        d
+                        for d in filtered
+                        if condition_bool_equal(d, key, request_items[key])
                     ]
                 else:
                     filtered = [
@@ -140,7 +181,7 @@ def filter_lod(request_items, fields, data, types):
     return filtered
 
 
-def form_lod(request_items, fields, data, types):
+def form_lod(request_items, fields, data, types, exclude_fields, labels):
     """
     purpose:
       to generate HTML for an HTML FORM based on the fields and request.GET terms
@@ -149,23 +190,25 @@ def form_lod(request_items, fields, data, types):
       - fields = list of field names
       - data = list of dictionaries
       - types = dictionary of field types
+      - exclude_fields = list of field names to exclude from the output
+      - labels = field labels for HTML form
     output:
       - list of form elements as strings
     """
     form_data = list()
     ri = request_items.dict()
     for field in fields:
-        if field not in ["result_id_id", "rowid"]:
+        if field not in exclude_fields:
             # print(ri.get(field))
             if types[field]["type"] == "string" and types[field]["len"] > 50:
                 if len(ri.get(field, "")) > 0:
-                    form_html = f'<label for="id_{field}">{field}:</label><input type="text" class="form-control" name="{field}" id="id_{field}" value="{ri.get(field)}">'
+                    form_html = f'<label for="id_{field}">{labels[field]}:</label><input type="text" class="form-control" name="{field}" id="id_{field}" value="{ri.get(field)}">'
                 else:
-                    form_html = f'<label for="id_{field}">{field}:</label><input type="text" class="form-control" name="{field}" id="id_{field}">'
+                    form_html = f'<label for="id_{field}">{labels[field]}:</label><input type="text" class="form-control" name="{field}" id="id_{field}">'
             elif types[field]["type"] == "date":
                 form_html = ""
             else:
-                form_html = f'<label for="id_{field}">{field}:</label><select class="form-control" name="{field}" id="id_{field}">'
+                form_html = f'<label for="id_{field}">{label[field]}:</label><select class="form-control" name="{field}" id="id_{field}">'
                 if field in ri.keys() and "_unselected_" in ri.get(field, ""):
                     form_html += f'<option value="_unselected_ selected">--------</option>'
                 else:
